@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quick Image Resizer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(to right, #6a11cb, #2575fc);
+            color: #fff;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 50px auto;
+            background: #ffffff1a;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            position: relative;
+            text-align: center;
+        }
+        .title {
+            margin-bottom: 20px;
+            font-size: 24px;
+            color: #fff;
+        }
+        .image-container {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+            max-width: 100%;
+        }
+        .image-preview {
+            display: block;
+            max-width: 100%;
+            max-height: 300px;
+            margin: 20px auto;
+            border: 2px dashed #fff;
+            border-radius: 10px;
+        }
+        #uploadButton {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 5px 10px;
+            font-size: 12px;
+            background-color: #ffffff;
+            color: #000;
+            border: 1px solid #000;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        #uploadButton:hover {
+            background-color: #f8f9fa;
+            border-color: #007bff;
+        }
+        .success-message {
+            display: none;
+            margin: 20px 0;
+            padding: 10px;
+            background-color: #28a745;
+            color: #fff;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 18px;
+        }
+        .success-icon {
+            display: inline-block;
+            font-size: 24px;
+            color: #28a745;
+            margin-right: 10px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .row {
+            display: flex;
+            gap: 20px;
+        }
+        .row .form-group {
+            flex: 1;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+        button {
+            width: 100%;
+            padding: 15px;
+            font-size: 18px;
+            background: #6a11cb;
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        button:hover {
+            background: #2575fc;
+        }
+        #downloadLink {
+            display: block;
+            margin-top: 20px;
+            text-decoration: none;
+            color: #fff;
+            font-weight: bold;
+            background-color: #28a745;
+            padding: 15px;
+            border-radius: 8px;
+            transition: 0.3s;
+        }
+        #downloadLink:hover {
+            background-color: #218838;
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="title">Quick Image Resizer</div>
+        <input type="file" id="imageInput" accept="image/*" style="display: none;">
+        <div class="image-container">
+            <label for="imageInput">
+                <img id="imagePreview" class="image-preview" alt="Click to Upload Image" title="Click to Upload Image">
+            </label>
+            <button id="uploadButton">Upload Image</button>
+        </div>
+
+        <div class="success-message" id="successMessage">
+            <span class="success-icon">✔</span> Changes applied successfully!
+        </div>
+
+        <div class="row">
+            <div class="form-group">
+                <label for="widthPx">Width (px):</label>
+                <input type="number" id="widthPx" placeholder="Enter Width in pixels">
+            </div>
+            <div class="form-group">
+                <label for="heightPx">Height (px):</label>
+                <input type="number" id="heightPx" placeholder="Enter Height in pixels">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="dpi">DPI:</label>
+            <input type="number" id="dpi" placeholder="Enter DPI (e.g., 300)">
+        </div>
+
+        <div class="row">
+            <div class="form-group">
+                <label for="widthCm">Width (cm):</label>
+                <input type="number" id="widthCm" placeholder="Enter Width in cm">
+            </div>
+            <div class="form-group">
+                <label for="heightCm">Height (cm):</label>
+                <input type="number" id="heightCm" placeholder="Enter Height in cm">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="targetSizeKb">Compress to Size (KB):</label>
+            <input type="number" id="targetSizeKb" placeholder="Enter target size in KB">
+        </div>
+
+        <button id="applyChanges">Apply Changes</button>
+        <a id="downloadLink" style="display: none;" download="modified-image.jpg">Download Modified Image</a>
+    </div>
+
+    <script>
+        const imageInput = document.getElementById('imageInput');
+        const imagePreview = document.getElementById('imagePreview');
+        const applyChanges = document.getElementById('applyChanges');
+        const downloadLink = document.getElementById('downloadLink');
+        const uploadButton = document.getElementById('uploadButton');
+        const successMessage = document.getElementById('successMessage');
+
+        let originalImage = null;
+
+        imageInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    imagePreview.src = reader.result;
+                    originalImage = new Image();
+                    originalImage.src = reader.result;
+
+                    // Show the "Upload Image" button after an image is selected
+                    uploadButton.style.display = 'block';
+                    successMessage.style.display = 'none'; // Hide success message
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        uploadButton.addEventListener('click', () => {
+            imageInput.click();
+        });
+
+        applyChanges.addEventListener('click', async () => {
+            if (!originalImage) {
+                alert('Please upload an image before applying changes.');
+                return;
+            }
+
+            const targetSizeKb = document.getElementById('targetSizeKb').value;
+            if (!targetSizeKb) {
+                alert('Please enter the target size in KB.');
+                return;
+            }
+
+            let quality = 1.0; // Start with 100% quality
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+
+            // Set canvas size
+            canvas.width = originalImage.width;
+            canvas.height = originalImage.height;
+            context.drawImage(originalImage, 0, 0, canvas.width, canvas.height);
+
+            let compressedBlob = await new Promise((resolve) => {
+                function compressImage() {
+                    canvas.toBlob((blob) => {
+                        if (blob) {
+                            if ((blob.size / 1024) > targetSizeKb && quality > 0.1) {
+                                quality -= 0.05; // Reduce quality
+                                canvas.toBlob(compressImage, 'image/jpeg', quality);
+                            } else {
+                                resolve(blob);
+                            }
+                        }
+                    }, 'image/jpeg', quality);
+                }
+                compressImage();
+            });
+
+            const url = URL.createObjectURL(compressedBlob);
+            downloadLink.href = url;
+            downloadLink.style.display = 'block';
+            downloadLink.textContent = 'Download Modified Image';
+
+            successMessage.style.display = 'block';
+            setTimeout(() => {
+                successMessage.style.display = 'none';
+            }, 3000); // Hide the success message after 3 seconds
+        });
+    </script>
+</body>
+</html>
